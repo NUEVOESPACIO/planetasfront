@@ -66,9 +66,22 @@ function Menu({ currentView, onNavigate, habilitadosxrol }) {
               ${!habilitadosxrol.includes('todoslosusuarios') ? 'disabled' : ''}
             `}
           >
-            Todos los Usuarios
+            ABM Usuarios
           </a>
         </li>
+
+        <li>
+          <a 
+            href="#abmplanetas"
+            onClick={(e) => handleClick(e, 'abmplanetas')}
+            className={`
+              ${currentView === 'abmplanetas' ? 'active' : ''}
+              ${!habilitadosxrol.includes('abmplanetas') ? 'disabled' : ''}
+            `}
+          >
+            ABM Planetass
+          </a>
+</li>
 
         <li>
           <a 

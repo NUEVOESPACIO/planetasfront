@@ -9,6 +9,7 @@ import Footer from './components/Footer'
 import Login from "./components/Login";
 import Editmydata from "./components/Editmydata"
 import Todoslosusuarios from "./components/Todoslosusuarios"
+import Abmplanetas from './components/abmplanetas'
 import './App.css'
 
 function App() {
@@ -17,10 +18,10 @@ function App() {
 
   const viewsByRole = {
     NONE: ['home', 'login', 'contacto'], // sin rol
-    ROLE_ADMIN: ['home', 'login', 'logout', 'bienvenida', 'contacto', 'editmydata','todoslosusuarios'],
-    ROLE_VISIT: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata'],
-    ROLE_CIENTIFICO: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata'],
-    ROLE_ASTRONOMO: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata']
+    ROLE_ADMIN: ['home', 'logout', 'bienvenida', 'contacto', 'editmydata','todoslosusuarios','abmplanetas'],
+    ROLE_VISIT: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata','abmplanetas'],
+    ROLE_CIENTIFICO: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata','abmplanetas'],
+    ROLE_ASTRONOMO: ['home', 'logout', 'contacto', 'bienvenida', 'editmydata','abmplanetas']
   };
 
   useEffect(() => {
@@ -52,6 +53,8 @@ function App() {
         return <Contacto />    
       case 'todoslosusuarios':
         return <Todoslosusuarios />
+        case 'abmplanetas':
+          return <Abmplanetas />
       default:
         return <Home />
     }

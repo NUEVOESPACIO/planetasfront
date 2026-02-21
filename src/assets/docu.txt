@@ -1,0 +1,299 @@
+import { useEffect, useState } from "react";
+
+function FilaPlaneta({ idPlaneta, token }) {
+
+  const [fotos, setFotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchFotos();
+  }, [idPlaneta]);
+
+  const fetchFotos = async () => {
+    try {
+
+      const params = new URLSearchParams({
+        tablaasociada: "planetas",
+        idasociado: idPlaneta,
+        clasificacion: "FOTOPLANETA"
+      });
+      const res = await fetch(
+        `http://localhost:8080/api/fotos/buscar?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Error al obtener fotos");
+      }
+
+      const data = await res.json();
+      setFotos(data);
+
+    } catch (err) {
+      console.error("Error cargando fotos", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (idFoto) => {
+    const confirmar = window.confirm("¿Eliminar esta foto?");
+    if (!confirmar) return;
+
+    try {
+      await fetch(
+        `http://localhost:8080/api/fotos/delete/${idFoto}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setFotos(fotos.filter(f => f.id !== idFoto));
+
+    } catch (error) {
+      console.error("Error eliminando foto", error);
+    }
+  };
+
+  const handleAddFoto = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (fotos.length >= 3) {
+      alert("Máximo 3 fotos permitidas");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);    
+    formData.append("descripcion","A IMPLEMENTEAR");
+    formData.append("clasificacion","FOTOPLANETA");
+    formData.append("tabla_asociada","planetas");
+    formData.append("id_asociado",idPlaneta);
+
+    try {
+      await fetch(
+        `http://localhost:8080/api/planetas/fotos/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
+
+      fetchFotos();
+
+    } catch (error) {
+      console.error("Error agregando foto", error);
+    }
+  };
+
+  const handleReplace = async (idFoto, file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("foto", file);
+
+    try {
+      await fetch(
+        `http://localhost:8080/api/fotos/${idFoto}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
+
+      fetchFotos();
+
+    } catch (error) {
+      console.error("Error reemplazando foto", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <tr>
+        <td colSpan="7">Cargando fotos...</td>
+      </tr>
+    );
+  }
+
+  return (
+
+      <div style={styles.container}>
+    
+        {/* Columna izquierda - Logo */}
+        <div style={styles.logoSection}>
+          <div style={styles.logoBox}>
+            {logo ? (
+              <img src={logo} alt="Logo Planeta" style={styles.logoImg} />
+            ) : (
+              <span>Logo Planeta</span>
+            )}
+          </div>
+    
+          <button style={styles.button}>Cambiar Foto Logo</button>
+          <button style={styles.buttonDanger}>Quitar</button>
+        </div>
+    
+        {/* Sección derecha */}
+        <div style={styles.imagesSection}>
+    
+          {fotos.slice(0, 2).map((foto, index) => (
+            <div key={foto.id_foto} style={styles.imageCard}>
+    
+              {/* Imagen */}
+              <div style={styles.imageBox}>
+                <img
+                  src={`http://localhost:8080/api/fotos/${foto.id_foto}/imagen`}
+                  alt={`Imagen ${index + 1}`}
+                  style={styles.image}
+                />
+              </div>
+    
+              {/* Descripción */}
+              <div style={styles.descriptionBox}>
+                {foto.descripcion}
+              </div>
+    
+              {/* Botones */}
+              <div style={styles.actions}>
+                <button style={styles.buttonSmall}>
+                  Actualizar Descripción {index + 1}
+                </button>
+    
+                <button style={styles.buttonSmall}>
+                  Cambiar Imagen {index + 1}
+                </button>
+    
+                <button style={styles.buttonDangerSmall}>
+                  Quitar Imagen {index + 1}
+                </button>
+              </div>
+    
+            </div>
+          ))}
+    
+        </div>
+    
+      </div>
+    );
+  
+}
+
+const styles = {
+  container: {
+    display: "flex",
+    gap: "30px",
+    padding: "20px"
+  },
+
+  logoSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    width: "150px"
+  },
+
+  logoBox: {
+    width: "120px",
+    height: "120px",
+    border: "1px solid #ccc",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  logoImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover"
+  },
+
+  imagesSection: {
+    display: "flex",
+    gap: "40px"
+  },
+
+  imageCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+
+  imageBox: {
+    width: "300px",
+    height: "180px",
+    border: "1px solid #ccc"
+  },
+
+  image: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover"
+  },
+
+  descriptionBox: {
+    border: "1px solid #ccc",
+    padding: "5px",
+    minHeight: "30px"
+  },
+
+  actions: {
+    display: "flex",
+    gap: "5px"
+  },
+
+  button: {
+    padding: "5px",
+    backgroundColor: "#3b6cb7",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  },
+
+  buttonDanger: {
+    padding: "5px",
+    backgroundColor: "#1e3e78",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  },
+
+  buttonSmall: {
+    padding: "3px 6px",
+    fontSize: "12px",
+    backgroundColor: "#3b6cb7",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  },
+
+  buttonDangerSmall: {
+    padding: "3px 6px",
+    fontSize: "12px",
+    backgroundColor: "#1e3e78",
+    color: "white",
+    border: "none",
+    cursor: "pointer"
+  }
+};
+
+export default FilaPlaneta;
+<img
+  src={`data:image/png;base64,${foto.imagen}`}
+  alt="Foto"
+/>
