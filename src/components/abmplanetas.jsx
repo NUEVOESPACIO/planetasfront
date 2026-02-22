@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import FilaPlaneta from "./filaplaneta"
+import FilaPlaneta from "./filaplaneta";
 
 function Abmplanetas() {
   const [usuario] = useState(() => {
     const data = localStorage.getItem("datauser");
     return data ? JSON.parse(data) : null;
   });
+
   const [planetas, setPlanetas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
-  const [expandedId, setExpandedId] = useState(null)
+  const [expandedId, setExpandedId] = useState(null);
+
   const [nuevoPlaneta, setNuevoPlaneta] = useState({
     nombre: "",
     nombre_cientifico: "",
@@ -21,71 +23,44 @@ function Abmplanetas() {
   const puedeCrearPlaneta =
     usuario?.rol === "ROLE_ADMIN" ||
     usuario?.rol === "ROLE_ASTRONOMO";
+
   const esAdmin = usuario?.rol === "ROLE_ADMIN";
-  const esAstronomo = usuario?.rol === "ROLE_ASTRONOMO";
 
-  // 🔹 Obtener todos los planetas
+  /* ================= FETCH ================= */
+
   useEffect(() => {
-    const obtenerPlanetas = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/abm/todoslosplanetas", {
-          headers: {
-            "Authorization": `Bearer ${usuario?.token}`
-          }
-        });
+    if (!usuario?.token) return;
 
-        const data = await response.json();
-        setPlanetas(data);
-      } catch (error) {
-        console.error("Error usuarios:", error);
-      }
-    };
-
-    if (usuario?.token) {
-      obtenerPlanetas();
-    }
+    fetch("http://localhost:8080/abm/todoslosplanetas", {
+      headers: { Authorization: `Bearer ${usuario.token}` }
+    })
+      .then(res => res.json())
+      .then(setPlanetas)
+      .catch(err => console.error(err));
   }, [usuario]);
 
-  // 🔹 Obtener usuarios
   useEffect(() => {
-    const obtenerUsuarios = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/abm/todoslosusuarios", {
-          headers: {
-            "Authorization": `Bearer ${usuario?.token}`
-          }
-        });
+    if (!usuario?.token) return;
 
-        const data = await response.json();
-        setUsuarios(data);
-      } catch (error) {
-        console.error("Error usuarios planetas:", error);
-      }
-    };
-
-    if (usuario?.token) {
-      obtenerUsuarios();
-    }
+    fetch("http://localhost:8080/abm/todoslosusuarios", {
+      headers: { Authorization: `Bearer ${usuario.token}` }
+    })
+      .then(res => res.json())
+      .then(setUsuarios)
+      .catch(err => console.error(err));
   }, [usuario]);
 
-  // 🔹 Manejar cambios de cada registro
+  /* ================= HANDLERS ================= */
+
   const handleChange = (index, field, value) => {
-    const nuevosPlanetas = [...planetas];
-
-    if (field === "id_usuario") {
-      nuevosPlanetas[index].id_usuario = parseInt(value);
-    } else {
-      nuevosPlanetas[index][field] = value;
-    }
-
-    setPlanetas(nuevosPlanetas);
+    const nuevos = [...planetas];
+    nuevos[index][field] =
+      field === "id_usuario" ? parseInt(value) : value;
+    setPlanetas(nuevos);
   };
 
-  // 🔹 Actualizar planeta
   const actualizarPlaneta = async (planetaf) => {
-    // const { planeta, ...rest } = planetaf;
-    // const usuarioobj = { "id_usuario": id_usuario.idusuario }
-    const newPlanetaAct = {
+    const body = {
       idPlaneta: planetaf.id_planeta,
       nombre: planetaf.nombre,
       nombre_cientifico: planetaf.nombre_cientifico,
@@ -93,70 +68,62 @@ function Abmplanetas() {
       diametro: parseFloat(planetaf.diametro),
       caracteristicas: planetaf.caracteristicas,
       user: { id: planetaf.id_usuario }
-
     };
 
-
     try {
-      const response = await fetch("http://localhost:8080/abm/actualizarplaneta", {
-        method: "POST", // o PUT después
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${usuario?.token}`
-        },
-        body: JSON.stringify(newPlanetaAct)
-      });
+      const res = await fetch(
+        "http://localhost:8080/abm/actualizarplaneta",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${usuario.token}`
+          },
+          body: JSON.stringify(body)
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error("Error al actualizar planeta");
-      }
-
+      if (!res.ok) throw new Error();
       alert("Planeta actualizado correctamente");
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("Error al actualizar");
     }
   };
 
-  // Crear Planeta
   const crearPlaneta = async () => {
     try {
-
       const userFinalId =
         usuario?.rol === "ROLE_ASTRONOMO"
           ? usuario.id
           : nuevoPlaneta.user.id;
 
-      const planetaNuevoParaEnviar = {
+      const body = {
         ...nuevoPlaneta,
         masa: parseFloat(nuevoPlaneta.masa),
         diametro: parseFloat(nuevoPlaneta.diametro),
         user: { id: userFinalId }
       };
 
+      const res = await fetch(
+        "http://localhost:8080/abm/crearplaneta",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${usuario.token}`
+          },
+          body: JSON.stringify(body)
+        }
+      );
 
+      if (!res.ok) throw new Error();
 
-      const response = await fetch("http://localhost:8080/abm/crearplaneta", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${usuario?.token}`
-        },
-
-
-        body: JSON.stringify(planetaNuevoParaEnviar)
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al crear planeta");
-      }
-
-      const planetaCreado = await response.json();
+      const planetaCreado = await res.json();
 
       setPlanetas([
         ...planetas,
         {
-          id: planetaCreado.id,
+          id_planeta: planetaCreado.id,
           nombre: planetaCreado.nombre,
           nombre_cientifico: planetaCreado.nombre_cientifico,
           masa: planetaCreado.masa,
@@ -176,170 +143,151 @@ function Abmplanetas() {
       });
 
       alert("Planeta creado correctamente");
-
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("Error al crear planeta");
     }
   };
 
-  // Cambio en campo de nuevo plantea
-  const handleNuevoChange = (field, value) => {
-    if (field === "user") {
-      setNuevoPlaneta({
-        ...nuevoPlaneta,
-        user: { id: parseInt(value) }
-      });
-    } else {
-      setNuevoPlaneta({
-        ...nuevoPlaneta,
-        [field]: value
-      });
-    }
-  };
-
-  // Eliminar Planeta
-  const eliminarPlaneta = async (planetaId) => {
-
-    const confirmar = window.confirm("¿Está seguro que desea eliminar este Planeta?");
-    if (!confirmar) return;
+  const eliminarPlaneta = async (id) => {
+    if (!window.confirm("¿Eliminar planeta?")) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/abm/eliminarplaneta/${planetaId}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${usuario?.token}`
+      const res = await fetch(
+        `http://localhost:8080/abm/eliminarplaneta/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${usuario.token}` }
         }
-      });
+      );
 
-      if (!response.ok) {
-        throw new Error("Error al eliminar planeta");
-      }
-
-      // Actualizamos la lista quitando el usuario eliminado
-      setPlanetas(planetas.filter(p => p.id_planeta !== planetaId));
-
-      alert("Planeta eliminado correctamente");
-
-    } catch (error) {
-      console.error(error);
-      alert("Error al eliminar Planeta");
+      if (!res.ok) throw new Error();
+      setPlanetas(planetas.filter(p => p.id_planeta !== id));
+    } catch {
+      alert("Error al eliminar");
     }
   };
+
+  const handleNuevoChange = (field, value) => {
+    if (field === "user") {
+      setNuevoPlaneta({ ...nuevoPlaneta, user: { id: parseInt(value) } });
+    } else {
+      setNuevoPlaneta({ ...nuevoPlaneta, [field]: value });
+    }
+  };
+
+  /* ================= UI ================= */
 
   return (
     <main style={styles.container}>
-      <h2 style={styles.title}>Lista de planetas</h2>
+      <h2 style={styles.title}>Administración de Planetas</h2>
 
-      <div style={styles.tableWrapper}>
+      <div style={styles.scrollArea}>
+
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.th}>Nombre</th>
-              <th style={styles.th}>Nombre cientifico</th>
-              <th style={styles.th}>masa</th>
-              <th style={styles.th}>diametro</th>
-              <th style={styles.th}>caracteristicas</th>
-              <th style={styles.th}>Usuario Creador</th>
-              <th style={styles.th}>Acciones</th>
+              <th>Nombre</th>
+              <th>Nombre Científico</th>
+              <th>Masa</th>
+              <th>Diámetro</th>
+              <th>Características</th>
+              <th>Usuario</th>
+              <th>Acciones</th>
             </tr>
           </thead>
 
           <tbody>
             {planetas.map((p, index) => {
-
-              // ✅ LOGICA DENTRO DEL MAP
               const deshabilitado =
                 usuario.rol !== "ROLE_ADMIN" &&
                 usuario.id !== p.id_usuario;
 
-              const deshabilitarChangeUser = usuario.rol !== "ROLE_ADMIN";
-
-
               return (
                 <>
-                  <tr key={p.id_planeta} style={styles.tr}>
-                    <td style={styles.td}>
+                  <tr key={p.id_planeta} style={styles.row}>
+                    <td>
                       <input
                         style={styles.input}
                         value={p.nombre}
-                        onChange={(e) => handleChange(index, "nombre", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(index, "nombre", e.target.value)
+                        }
                         disabled={deshabilitado}
                       />
                     </td>
 
-                    <td style={styles.td}>
+                    <td>
                       <input
                         style={styles.input}
                         value={p.nombre_cientifico}
-                        onChange={(e) => handleChange(index, "nombre_cientifico", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(index, "nombre_cientifico", e.target.value)
+                        }
                         disabled={deshabilitado}
                       />
                     </td>
 
-                    <td style={styles.td}>
+                    <td>
                       <input
-                        style={styles.input}
+                        style={styles.inputSmall}
                         value={p.masa}
-                        onChange={(e) => handleChange(index, "masa", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(index, "masa", e.target.value)
+                        }
                         disabled={deshabilitado}
                       />
                     </td>
 
-                    <td style={styles.td}>
+                    <td>
                       <input
-                        style={styles.input}
+                        style={styles.inputSmall}
                         value={p.diametro}
-                        onChange={(e) => handleChange(index, "diametro", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(index, "diametro", e.target.value)
+                        }
                         disabled={deshabilitado}
                       />
                     </td>
 
-                    <td style={styles.td}>
+                    <td>
                       <input
                         style={styles.input}
                         value={p.caracteristicas}
-                        onChange={(e) => handleChange(index, "caracteristicas", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(index, "caracteristicas", e.target.value)
+                        }
                         disabled={deshabilitado}
                       />
                     </td>
 
-                    <td style={styles.td}>
+                    <td>
                       <select
+                        style={styles.select}
                         value={p.id_usuario}
-                        style={{
-                          ...styles.select,
-                          ...(deshabilitarChangeUser && styles.selectDisabled)
-                        }}
-                        onChange={(e) => handleChange(index, "id_usuario", e.target.value)}
-                        disabled={deshabilitarChangeUser}
+                        onChange={(e) =>
+                          handleChange(index, "id_usuario", e.target.value)
+                        }
+                        disabled={usuario.rol !== "ROLE_ADMIN"}
                       >
-                        {usuarios.map((usuariol) => (
-                          <option key={usuariol.id} value={usuariol.id}>
-                            {usuariol.username}
+                        {usuarios.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.username}
                           </option>
                         ))}
                       </select>
                     </td>
 
-                    <td style={styles.td}>
+                    <td style={styles.actions}>
                       <button
-                        style={{
-                          ...styles.actualizarBtn,
-                          ...(deshabilitado && styles.actualizarBtnDisabled)
-                        }}
+                        style={styles.btnUpdate}
                         onClick={() => actualizarPlaneta(p)}
                         disabled={deshabilitado}
-
                       >
                         Actualizar
                       </button>
 
                       <button
-                        style={{
-                          ...styles.deleteBtn,
-                          ...(deshabilitado && styles.deleteBtnDisabled)
-                        }}
+                        style={styles.btnDelete}
                         onClick={() => eliminarPlaneta(p.id_planeta)}
                         disabled={deshabilitado}
                       >
@@ -347,24 +295,19 @@ function Abmplanetas() {
                       </button>
 
                       <button
-                        style={{
-                          ...styles.deleteBtn,
-                          ...(deshabilitado && styles.deleteBtnDisabled)
-                        }}
+                        style={styles.btnSecondary}
                         onClick={() =>
                           setExpandedId(
-                            expandedId === p.id_planeta ? null : p.id_planeta
+                            expandedId === p.id_planeta
+                              ? null
+                              : p.id_planeta
                           )
                         }
-                        disabled={deshabilitado}
                       >
                         Fotos
                       </button>
-
-
                     </td>
                   </tr>
-
 
                   {expandedId === p.id_planeta && (
                     <FilaPlaneta
@@ -373,279 +316,211 @@ function Abmplanetas() {
                     />
                   )}
                 </>
-
-                // AQUI TOOD UN NUEVO RETURN QU DEPENDE DE ID_PLANETA PERO HY MNERA DE "CONSTRUIRLO" EN OTRO COMPONENTE (PORQU L CODIGO ERIA MUY LARGO)
-
               );
             })}
           </tbody>
-
         </table>
 
-      </div>
+        {puedeCrearPlaneta && (
+          <div style={styles.createSection}>
+            <h3 style={styles.subtitle}>Crear Nuevo Planeta</h3>
 
-      {/* Formulario de creación de usuario */}
+            <div style={styles.createGrid}>
+              <input
+                style={styles.input}
+                placeholder="Nombre"
+                value={nuevoPlaneta.nombre}
+                onChange={(e) =>
+                  handleNuevoChange("nombre", e.target.value)
+                }
+              />
 
-      {puedeCrearPlaneta && (
-        <div>
-          <h3 style={styles.subtitle}>Crear nuevo Planeta</h3>
+              <input
+                style={styles.input}
+                placeholder="Nombre Científico"
+                value={nuevoPlaneta.nombre_cientifico}
+                onChange={(e) =>
+                  handleNuevoChange("nombre_cientifico", e.target.value)
+                }
+              />
 
-          <div style={styles.createCard}>
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <tbody>
-                  <tr>
-                    <td>
-                      <input
-                        style={styles.input}
-                        placeholder="Nombre"
-                        value={nuevoPlaneta.nombre}
-                        onChange={(e) => handleNuevoChange("nombre", e.target.value)}
-                      />
-                    </td>
+              <input
+                style={styles.inputSmall}
+                placeholder="Masa"
+                value={nuevoPlaneta.masa}
+                onChange={(e) =>
+                  handleNuevoChange("masa", e.target.value)
+                }
+              />
 
-                    <td>
-                      <input
-                        style={styles.input}
-                        placeholder="Nombre_Cientifico"
-                        value={nuevoPlaneta.nombre_cientifico}
-                        onChange={(e) => handleNuevoChange("nombre_cientifico", e.target.value)}
-                      />
-                    </td>
+              <input
+                style={styles.inputSmall}
+                placeholder="Diámetro"
+                value={nuevoPlaneta.diametro}
+                onChange={(e) =>
+                  handleNuevoChange("diametro", e.target.value)
+                }
+              />
 
-                    <td>
-                      <input
-                        style={styles.input}
-                        placeholder="Masa"
-                        value={nuevoPlaneta.masa}
-                        onChange={(e) => handleNuevoChange("masa", e.target.value)}
-                      />
-                    </td>
+              <input
+                style={styles.input}
+                placeholder="Características"
+                value={nuevoPlaneta.caracteristicas}
+                onChange={(e) =>
+                  handleNuevoChange("caracteristicas", e.target.value)
+                }
+              />
 
-                    <td>
-                      <input
-                        style={styles.input}
-                        placeholder="Diametro"
-                        value={nuevoPlaneta.diametro}
-                        onChange={(e) => handleNuevoChange("diametro", e.target.value)}
-                      />
-                    </td>
-
-                    <td>
-                      <input
-                        style={styles.input}
-                        placeholder="Caracteristicas"
-                        value={nuevoPlaneta.caracteristicas}
-                        onChange={(e) => handleNuevoChange("caracteristicas", e.target.value)}
-                      />
-                    </td>
-
-                    <td>
-                      {esAdmin ? (
-
-                        <select
-                          style={styles.select}
-                          value={nuevoPlaneta.user?.id || ""}
-                          onChange={(e) => handleNuevoChange("user", e.target.value)}
-                        >
-                          <option value="">Seleccione un usuario creador</option>
-                          {usuarios.map((userd) => (
-                            <option key={userd.id} value={userd.id}>
-                              {userd.username}
-                            </option>
-                          ))}
-                        </select>
-
-                      ) : (
-
-                        < div >
-                          <input
-                            style={styles.input}
-                            value={`${usuario.username} (${usuario.rol})`}
-                            disabled
-
-                          />
-
-                        </div>
-
-                      )}
-                    </td>
-
-                  </tr>
-                </tbody>
-              </table>
+              {esAdmin ? (
+                <select
+                  style={styles.select}
+                  value={nuevoPlaneta.user?.id || ""}
+                  onChange={(e) =>
+                    handleNuevoChange("user", e.target.value)
+                  }
+                >
+                  <option value="">
+                    Seleccione usuario creador
+                  </option>
+                  {usuarios.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.username}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  style={styles.input}
+                  value={`${usuario.username} (${usuario.rol})`}
+                  disabled
+                />
+              )}
             </div>
 
             <button
-              style={styles.createBtn}
+              style={styles.btnCreate}
               onClick={crearPlaneta}
             >
               Crear Planeta
             </button>
           </div>
-        </div>
-      )
-      }
+        )}
 
-
-    </main >
-
+      </div>
+    </main>
   );
-
-
 }
+
 const styles = {
   container: {
-    maxWidth: "1200px",
+    maxWidth: "1400px",
     margin: "40px auto",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    padding: "0 20px",
-    color: "#333"
+    padding: "30px",
+    fontFamily: "Segoe UI, sans-serif",
+    backgroundColor: "#ffffff",
+    borderRadius: "14px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)"
   },
 
   title: {
     textAlign: "center",
-    marginBottom: "20px",
-    fontSize: "28px",
-    fontWeight: "600"
+    marginBottom: "25px",
+    fontSize: "26px"
   },
 
-  subtitle: {
-    marginTop: "40px",
-    marginBottom: "15px",
-    fontSize: "20px",
-    fontWeight: "500"
-  },
-
-  tableWrapper: {
-    overflowX: "auto",
+  scrollArea: {
+    maxHeight: "70vh",
     overflowY: "auto",
-    maxHeight: "450px",
-    marginBottom: "20px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    padding: "10px",
-    backgroundColor: "#fafafa"
+    paddingRight: "10px"
   },
 
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    marginBottom: "20px",
     fontSize: "14px"
   },
 
-  th: {
-    borderBottom: "2px solid #ccc",
-    padding: "10px",
-    textAlign: "left",
-    backgroundColor: "#f5f5f5",
-    fontWeight: "500"
-  },
-
-  tr: {
-    borderBottom: "1px solid #eee",
-    transition: "background-color 0.2s",
-  },
-
-  td: {
-    padding: "8px",
-    verticalAlign: "middle"
+  row: {
+    borderBottom: "1px solid #eee"
   },
 
   input: {
     width: "100%",
     padding: "6px 10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-    color: "#333",
-    backgroundColor: "#fff"
+    borderRadius: "6px",
+    border: "1px solid #ddd"
   },
 
-  inputdisabled: {
-    width: "100%",
-    padding: "6px 10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    color: "#999",
-    backgroundColor: "#f5f5f5"
-  },
-
-  actualizarBtn: {
-    padding: "5px 10px",
-    borderRadius: "4px",
-    border: "none",
-    backgroundColor: "#4caf50",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "500",
-    transition: "background-color 0.2s"
-  },
-
-  actualizarBtnDisabled: {
-    cursor: "not-allowed",
-    backgroundColor: "#ddd",
-    color: "#888",
-    opacity: 0.7,
-    border: "none"
-  },
-
-  deleteBtn: {
-    padding: "5px 10px",
-    borderRadius: "4px",
-    border: "none",
-    backgroundColor: "#f44336",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "500",
-    transition: "background-color 0.2s"
-  },
-
-  deleteBtnDisabled: {
-    cursor: "not-allowed",
-    backgroundColor: "#ddd",
-    color: "#888",
-    opacity: 0.7,
-    border: "none"
-  },
-
-  createCard: {
-    padding: "20px",
-    border: "2px solid #4caf50",
-    borderRadius: "8px",
-    backgroundColor: "#f6fff6",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
-  },
-
-  createBtn: {
-    marginTop: "10px",
-    padding: "10px 20px",
-    borderRadius: "5px",
-    border: "none",
-    backgroundColor: "#4caf50",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: "500"
+  inputSmall: {
+    width: "90px",
+    padding: "6px 8px",
+    borderRadius: "6px",
+    border: "1px solid #ddd"
   },
 
   select: {
-    cursor: "pointer",
     width: "100%",
-    padding: "6px 10px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-    color: "#333",
-    backgroundColor: "#fff"
+    padding: "6px",
+    borderRadius: "6px",
+    border: "1px solid #ddd"
   },
 
-  selectDisabled: {
-    cursor: "not-allowed",
-    color: "#888",
-    opacity: 0.8,
-    border: "1px solid #ccc",
-    backgroundColor: "#eee"
+  actions: {
+    display: "flex",
+    gap: "6px"
+  },
+
+  btnUpdate: {
+    backgroundColor: "#4caf50",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
+  },
+
+  btnDelete: {
+    backgroundColor: "#e53935",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
+  },
+
+  btnSecondary: {
+    backgroundColor: "#607d8b",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
+  },
+
+  createSection: {
+    marginTop: "40px",
+    paddingTop: "20px",
+    borderTop: "1px solid #eee"
+  },
+
+  subtitle: {
+    marginBottom: "15px"
+  },
+
+  createGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "10px",
+    marginBottom: "15px"
+  },
+
+  btnCreate: {
+    backgroundColor: "#2e7d32",
+    color: "white",
+    border: "none",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    cursor: "pointer"
   }
 };
 

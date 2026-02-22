@@ -1,243 +1,142 @@
 import { useState } from "react";
 import planetadefault from "../assets/Captura.JPG";
 
-
 function FilaPlaneta({ idPlaneta, token }) {
 
-  const [fotos, setFotos] = useState([]);
+  const [fotos] = useState([]);
 
-  const fotologo = fotos[0] !== undefined ? fotos[0] : "No hay foto";
-  const primerafoto = fotos[1] !== undefined ? fotos[1] : "No hay foto";
-  const segundafoto = fotos[2] !== undefined ? fotos[2] : "No hay foto";
+  const fotologo = fotos[0] ?? null;
+  const primerafoto = fotos[1] ?? null;
+  const segundafoto = fotos[2] ?? null;
+
+  const renderImg = (foto) =>
+    foto
+      ? `data:image/png;base64,${foto.archivo}`
+      : planetadefault;
 
   return (
-
     <tr>
-      <td colspan="7">
+      <td colSpan="7">
+        <div style={styles.wrapper}>
 
-        <div style={styles.container}>
-
-          {/* Columna izquierda - Logo */}
           <div style={styles.logoSection}>
-            <div style={styles.logoBox}>
-              <img src={fotologo === "no hay foto" ? planetadefault : `data:image/png;base64,${fotologo.archivo}`} alt="Planeta" />
-              <button style={styles.button}>Cambiar</button>
-              <button style={styles.buttonDanger}>Quitar</button>
+            <img
+              src={renderImg(fotologo)}
+              alt="Logo planeta"
+              style={styles.logo}
+            />
+            <div style={styles.actions}>
+              <button style={styles.btnPrimary}>Cambiar</button>
+              <button style={styles.btnDanger}>Quitar</button>
             </div>
           </div>
 
-          {/* Sección izquierda */}
-          <div style={styles.imagesSection}>
+          {[primerafoto, segundafoto].map((foto, i) => (
+            <div key={i} style={styles.card}>
+              <img
+                src={renderImg(foto)}
+                alt="Planeta"
+                style={styles.image}
+              />
 
-
-            <div key={primerafoto.id_foto} style={styles.imageCard}>
-
-              {/* Imagen */}
-              <div style={styles.imageBox}>
-                <img
-                  src={primerafoto === "no hay foto" ? planetadefault : `data:image/png;base64,${primerafoto.archivo}`}
-                  alt={`Imagen ${primerafoto === "no hay foto" ? "no hay foto" : primerafoto.descripcion}`}
-                  style={styles.image}
-                />
+              <div style={styles.description}>
+                {foto?.descripcion || "No hay foto"}
               </div>
 
-      
-
-              {/* Descripción */}
-              <div style={styles.descriptionBox}>
-                {primerafoto === "no hay foto" ? "No hay foto" : primerafoto.descripcion}
-              </div>
-
-              {/* Botones */}
               <div style={styles.actions}>
-                <button style={styles.buttonSmall}>
-                  Cargar
-                </button>
-
-                <button style={styles.buttonSmall}>
-                  Cambiar
-                </button>
-
-                <button style={styles.buttonDangerSmall}>
-                  Quitar
-                </button>
+                <button style={styles.btnPrimary}>Cargar</button>
+                <button style={styles.btnSecondary}>Cambiar</button>
+                <button style={styles.btnDanger}>Quitar</button>
               </div>
-
             </div>
-
-
-          </div>
-
-          {/* Sección derecha */}
-          <div style={styles.imagesSection}>
-
-
-            <div key={segundafoto.id_foto} style={styles.imageCard}>
-
-              {/* Imagen */}
-              <div style={styles.imageBox}>
-                <img
-                  src={segundafoto === "no hay foto" ? planetadefault : `data:image/png;base64,${segundafoto.archivo}`}
-                  alt={`Imagen ${segundafoto === "no hay foto" ? "no hay foto" : segundafoto.descripcion}`}
-                  style={styles.image}
-                />
-              </div>
-
-              {/* Descripción */}
-              <div style={styles.descriptionBox}>
-                {segundafoto === "no hay foto" ? "No hay foto" : segundafoto.descripcion}
-              </div>
-
-              {/* Botones */}
-              <div style={styles.actions}>
-                <button style={styles.buttonSmall}>
-                  Cargar
-                </button>
-
-                <button style={styles.buttonSmall}>
-                  Cambiar
-                </button>
-
-                <button style={styles.buttonDangerSmall}>
-                  Quitar
-                </button>
-              </div>
-
-            </div>
-
-
-          </div>
-
+          ))}
 
         </div>
       </td>
     </tr>
   );
-
 }
 
 const styles = {
-  container: {
+  wrapper: {
     display: "flex",
     gap: "30px",
-    padding: "20px",
-    backgroundColor: "#fafafa",
-    borderRadius: "8px",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
+    padding: "25px",
+    backgroundColor: "#f8fafc",
+    borderRadius: "12px",
+    boxShadow: "0 6px 18px rgba(0,0,0,0.05)"
   },
 
   logoSection: {
     display: "flex",
     flexDirection: "column",
-    gap: "10px",
-    width: "150px",
-    alignItems: "center"
-  },
-
-  logoBox: {
-    width: "120px",
-    height: "120px",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    backgroundColor: "#fff"
+    gap: "10px"
   },
 
-  logoImg: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover"
+  logo: {
+    width: "130px",
+    height: "130px",
+    objectFit: "cover",
+    borderRadius: "10px",
+    border: "1px solid #ddd"
   },
 
-  imagesSection: {
-    display: "flex",
-    gap: "30px"
-  },
-
-  imageCard: {
+  card: {
+    backgroundColor: "#ffffff",
+    padding: "15px",
+    borderRadius: "10px",
+    width: "300px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
-    border: "1px solid #ddd",
-    borderRadius: "6px",
-    padding: "8px",
-    backgroundColor: "#fff",
-    minWidth: "150px"
-  },
-
-  imageBox: {
-    width: "300px",
-    height: "180px",
-    borderRadius: "6px",
-    overflow: "hidden",
-    border: "1px solid #ccc"
+    gap: "10px"
   },
 
   image: {
     width: "100%",
-    height: "100%",
-    objectFit: "cover"
+    height: "180px",
+    objectFit: "cover",
+    borderRadius: "8px"
   },
 
-  descriptionBox: {
-    border: "1px solid #eee",
-    padding: "5px",
-    minHeight: "30px",
-    borderRadius: "4px",
+  description: {
     fontSize: "13px",
-    backgroundColor: "#f9f9f9"
+    color: "#555"
   },
 
   actions: {
     display: "flex",
-    gap: "5px"
+    gap: "8px",
+    justifyContent: "center"
   },
 
-  button: {
-    padding: "5px 8px",
-    backgroundColor: "#3b6cb7",
-    color: "white",
+  btnPrimary: {
+    backgroundColor: "#1976d2",
+    color: "#fff",
     border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "13px",
-    transition: "background-color 0.2s"
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
   },
 
-  buttonDanger: {
-    padding: "5px 8px",
+  btnSecondary: {
+    backgroundColor: "#607d8b",
+    color: "#fff",
+    border: "none",
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
+  },
+
+  btnDanger: {
     backgroundColor: "#d32f2f",
-    color: "white",
+    color: "#fff",
     border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "13px",
-    transition: "background-color 0.2s"
-  },
-
-  buttonSmall: {
-    padding: "3px 6px",
-    fontSize: "12px",
-    backgroundColor: "#3b6cb7",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "background-color 0.2s"
-  },
-
-  buttonDangerSmall: {
-    padding: "3px 6px",
-    fontSize: "12px",
-    backgroundColor: "#d32f2f",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "background-color 0.2s"
+    padding: "5px 10px",
+    borderRadius: "6px",
+    cursor: "pointer"
   }
 };
+
 export default FilaPlaneta;
