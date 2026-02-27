@@ -14,7 +14,14 @@ function Login({ SebasNavegation}) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password }),
+      //body: JSON.stringify({ username, password }),      
+
+      //body: JSON.stringify({ username, password }),
+
+      body: JSON.stringify({
+        username: "sebacap3",
+        password: "Espana87"
+      }),
     })
       .then((response) => {
         if (!response.ok) {
