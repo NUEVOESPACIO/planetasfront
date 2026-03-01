@@ -1,119 +1,197 @@
 import { useState, useEffect } from "react";
 import planetadefault from "../assets/Captura.JPG";
 import logoplanetadefault from "../assets/logoplanetadefault.png";
-import { getFotosByPlanetaLogo, handleAddFoto } from "../services/fotosplanetasservice";
+import {
+  getFotosByPlanetaLogo,
+  getFotosByPlanetaDetail1,
+  getFotosByPlanetaDetail2,
+  handleAddFoto
+} from "../services/fotosplanetasservice";
+console.log("TERMINE LOS IMPORT")
 
 function FilaPlaneta({ idPlaneta, token }) {
+  // Estado fotos como objeto
 
-  const [fotos, setFotos] = useState([]);
+  const [fotos, setFotos] = useState({
+    logo: null,
+    detalle1: null,
+    detalle2: null
+  });
+
+
+  const [archivos, setArchivos] = useState({
+    LOGO: null,
+    "PLANETA 1": null,
+    "PLANETA 2": null
+  });
+
+  const [previews, setPreviews] = useState({
+    LOGO: null,
+    "PLANETA 1": null,
+    "PLANETA 2": null
+  });
+
   const [loading, setLoading] = useState(false);
+  console.log("Acabo de pasar por lo estados const[]")
 
-  const [archivos, setArchivos] = useState([]);
-  const [previews, setPreviews] = useState([]); // Opcional: ver la imagen antes de subir
+  // ----------------------------
+  // CARGA DE FOTOS
+  // --------------------------
+  const cargarFotos = async () => {
+    try {
+      setLoading(true);
+      console.log("ejecutando cargar futos para" + idPlaneta)
 
-  const fotologo = fotos[0] ?? null;
-  const primerafoto = fotos[1] ?? null;
-  const segundafoto = fotos[2] ?? null;
+      const [logo, d1, d2] = await Promise.all([
+        getFotosByPlanetaLogo(idPlaneta),
+        getFotosByPlanetaDetail1(idPlaneta),
+        getFotosByPlanetaDetail2(idPlaneta)
+      ]);
+      console.log("acade de definir la funcion cargarfotos()------")
+      console.log(idPlaneta);
+      console.log(logo); console.log(d1); console.log(d2);
 
+
+      setFotos({
+        logo: logo?.[0] ?? null,
+        detalle1: d1?.[0] ?? null,
+        detalle2: d2?.[0] ?? null
+      });
+
+      console.log("acade de pasar por setFOtos")
+    } catch (error) {
+      console.error("Error cargando fotos", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const cargarFotos = async () => {
-      try {
-        setLoading(true);
-
-        const [logoFotos, detalle1, detalle2] = await Promise.all([
-          getFotosByPlanetaLogo(idPlaneta),
-          getFotosByPlanetaDetail1(idPlaneta),
-          getFotosByPlanetaDetail2(idPlaneta)
-        ]);
-
-        setFotos([
-          logoFotos || null,
-          detalle1 || null,
-          detalle2 || null
-        ]);
-
-      } catch (err) {
-        //setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (idPlaneta) {
-      cargarFotos();
-    }
+    if (idPlaneta) cargarFotos();
   }, [idPlaneta]);
 
 
+  const readFileAsDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+  
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Error reading file"));
+  
+      reader.readAsDataURL(file);
+    });
+  };
 
-  const renderImgFotoLogo = (foto) =>
-    foto
-      ? `data:image/png;base64,${foto.archivo}`
-      : previews[0] ? previews[0] : logoplanetadefault;
+const handleFileChange = async (file, tipo) => {
+  if (!file) return;
 
-  const renderImgFotoPlaneta = (foto, i) =>
-    foto
-      ? `data:image/png;base64,${foto.archivo}`
-      : previews[i + 1] ? previews[i + 1] : planetadefault;
+  // Update archivos state
+  setArchivos(prev => ({ ...prev, [tipo]: file }));
+
+  try {
+    // Await the FileReader
+    const result = await readFileAsDataURL(file);
+
+    // Update previews state
+    setPreviews(prev => ({ ...prev, [tipo]: result }));
+  } catch (err) {
+    console.error("Failed to read file:", err);
+  }
+};
+  // ----------------------------
+  // PREVIEW DE ARCHIVOS
+  // ----------------------------
+  const handleFileChange2 = (file, tipo) => {
+    setArchivos(prev => ({ ...prev, [tipo]: file }));
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+       setPreviews(prev => ({ ...prev, [tipo]: reader.result }
+      ));
+    };
+    reader.readAsDataURL(file);
+  };
+
+
+
+
+  // ----------------------------
+  // SUBIR FOTO
+  // ----------------------------
+  const subirFoto = async tipo => {
+    const file = archivos[tipo];
+    if (!file) return;
+
+    await handleAddFoto(file, idPlaneta, tipo);
+    await cargarFotos();
+
+    setArchivos(prev => ({ ...prev, [tipo]: null }));
+    setPreviews(prev => ({ ...prev, [tipo]: null }));
+  };
+
+  const renderImagen = (foto, tipo, fallback) => {
+    if (foto) {
+      return `data:${foto.mimeType};base64,${foto.archivo}`;
+    }
+    if (previews[tipo]) return previews[tipo];
+    return fallback;
+  };
+
+  // ----------------------------
+  // RENDER
+  // ----------------------------
+  if (loading) {
+    return (
+      <tr>
+        <td colSpan={7}>Cargando fotos...</td>
+      </tr>
+    );
+  }
 
   return (
     <tr>
-      <td colSpan="7">
-        <div style={styles.panelWrapper}>
-          <div style={styles.logoSection}>
+      <td colSpan={7}>
+        <div style={styles.wrapper}>
+          {/* LOGO */}
+          <div style={styles.card}>
             <img
-              src={renderImgFotoLogo(fotologo)}
-              alt="Logo planeta"
-              style={styles.logo}
+              src={renderImagen(fotos.logo, "LOGO", logoplanetadefault)}
+              style={styles.image}
+              alt="Logo"
             />
-            <div style={styles.actions}>
-              <input type="file" accept="image/*" onChange={(e) => {
-                const file = e.target.files[0]; if (!file) return; setArchivos(prev => { const nuevos = [...prev]; nuevos[0] = file; return nuevos; });
-                const reader = new FileReader();
-                reader.onloadend = () => setPreviews(prev => { const nuevos = [...prev]; nuevos[0] = reader.result; return nuevos });
-                reader.readAsDataURL(file);
-              }}
-              />
-              {archivos[0] && <button style={styles.btnPrimary} onClick={() => handleAddFoto(archivos[0], idPlaneta, "LOGO")}>Upload</button>}
-              <button style={styles.btnDanger} onClick={() => {
-                setArchivos(prev => { const nuevos = [...prev]; nuevos[0] = []; return nuevos; });
-                setPreviews(prev => { const nuevos = [...prev]; nuevos[0] = []; return nuevos; });
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e =>
+                e.target.files && handleFileChange(e.target.files[0], "LOGO")
               }
-              }>Quitar</button>
-            </div>
+            />
+            {archivos.LOGO && <button onClick={() => subirFoto("LOGO")}>Subir</button>}
           </div>
 
-          {[primerafoto, segundafoto].map((foto, i) => (
-            <div key={i} style={styles.card}>
-              <img
-                src={renderImgFotoPlaneta(foto, i)}
-                alt="Planeta"
-                style={styles.image}
-              />
-
-              <div style={styles.description}>
-                {foto?.descripcion || "No hay foto"}
-              </div>
-
-              <div style={styles.actions}>
-                <input type="file" accept="image/*" onChange={(e) => {
-                  const file = e.target.files[0]; if (!file) return; setArchivos(prev => { const nuevos = [...prev]; nuevos[i + 1] = file; return nuevos; });
-                  const reader = new FileReader();
-                  reader.onloadend = () => setPreviews(prev => { const nuevos = [...prev]; nuevos[i + 1] = reader.result; return nuevos });
-                  reader.readAsDataURL(file);
-                }}
+          {/* DETALLES */}
+          {["PLANETA 1", "PLANETA 2"].map(tipo => {
+            const foto = tipo === "PLANETA 1" ? fotos.detalle1 : fotos.detalle2;
+            return (
+              <div key={tipo} style={styles.card}>
+                <img
+                  src={renderImagen(foto, tipo, planetadefault)}
+                  style={styles.image}
+                  alt={tipo}
                 />
-                {archivos[i + 1] && <button style={styles.btnPrimary} onClick={() => handleAddFoto(archivos[i + 1], idPlaneta, `PLANETA ${i+1}`)}>Upload</button>}
-                <button style={styles.btnDanger} onClick={() => {
-                  setArchivos(prev => { const nuevos = [...prev]; nuevos[i + 1] = []; return nuevos; });
-                  setPreviews(prev => { const nuevos = [...prev]; nuevos[i + 1] = []; return nuevos; });
-                }
-                }>Quitar</button>
-              </div>
-            </div>
-          ))}
+                <div>{foto?.descripcion || "Sin descripción"}</div>
 
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e =>
+                    e.target.files && handleFileChange(e.target.files[0], tipo)
+                  }
+                />
+                {archivos[tipo] && <button onClick={() => subirFoto(tipo)}>Subir</button>}
+              </div>
+            );
+          })}
         </div>
       </td>
     </tr>
@@ -121,86 +199,22 @@ function FilaPlaneta({ idPlaneta, token }) {
 }
 
 const styles = {
-  panelWrapper: {
+  wrapper: {
     display: "flex",
     gap: "30px",
-    padding: "30px",
-    margin: "10px 0 20px 0",
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)"
+    padding: "30px"
   },
-
-  logoSection: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "12px"
-  },
-
-  logo: {
-    width: "140px",
-    height: "140px",
-    objectFit: "cover",
-    borderRadius: "12px",
-    border: "1px solid #ddd"
-  },
-
   card: {
-    backgroundColor: "#f8fafc",
-    padding: "18px",
-    borderRadius: "12px",
-    width: "300px",
+    width: "250px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px"
+    gap: "10px"
   },
-
   image: {
     width: "100%",
     height: "180px",
     objectFit: "cover",
     borderRadius: "8px"
-  },
-
-  description: {
-    fontSize: "13px",
-    color: "#475569",
-    textAlign: "center"
-  },
-
-  actions: {
-    display: "flex",
-    gap: "8px",
-    justifyContent: "center"
-  },
-
-  btnPrimary: {
-    backgroundColor: "#2563eb",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    cursor: "pointer"
-  },
-
-  btnSecondary: {
-    backgroundColor: "#475569",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    cursor: "pointer"
-  },
-
-  btnDanger: {
-    backgroundColor: "#dc2626",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    cursor: "pointer"
   }
 };
 
