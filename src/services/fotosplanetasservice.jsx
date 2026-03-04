@@ -62,3 +62,13 @@ export const handleAddFoto = async (file, idPlaneta, tipo) => {
     throw error; // opcional
   }
 };
+
+export const deleteFotosById = async (idf) => {
+  try {
+    await apiClient.delete(`/fotos/delete/${idf}`);
+  } catch (error) {
+    console.error("Error borrando foto:", error);
+    throw error;
+  }
+};
+
