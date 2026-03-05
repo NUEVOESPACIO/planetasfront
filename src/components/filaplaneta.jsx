@@ -6,7 +6,8 @@ import {
   getFotosByPlanetaDetail1,
   getFotosByPlanetaDetail2,
   handleAddFoto,
-  deleteFotosById
+  deleteFotosById,
+  establecerDescripcion
 } from "../services/fotosplanetasservice";
 import apiClient from "../api/apiClient";
 console.log("TERMINE LOS IMPORT")
@@ -30,6 +31,12 @@ function FilaPlaneta({ idPlaneta, token }) {
     LOGO: null,
     "PLANETA 1": null,
     "PLANETA 2": null
+  });
+
+  const [descripciones, setDescripciones] = useState({
+    LOGO: "",
+    "PLANETA 1": "",
+    "PLANETA 2": ""
   });
 
   const [loading, setLoading] = useState(false);
@@ -57,6 +64,12 @@ function FilaPlaneta({ idPlaneta, token }) {
         logo: logo?.[0] ?? null,
         detalle1: d1?.[0] ?? null,
         detalle2: d2?.[0] ?? null
+      });
+
+      setDescripciones({
+        LOGO: logo?.[0]?.descripcion ?? "",
+        "PLANETA 1": d1?.[0]?.descripcion ?? "",
+        "PLANETA 2": d2?.[0]?.descripcion ?? ""
       });
 
       console.log("acade de pasar por setFOtos")
@@ -153,8 +166,33 @@ const renderImagen = (foto, tipo, fallback) => {
   return fallback;
 };
 
+const guardarDescripcion = async (tipo) => {
+  const mapTipoAFotoKey = (t) => {
+    if (t === "LOGO") return "logo";
+    if (t === "PLANETA 1") return "detalle1";
+    if (t === "PLANETA 2") return "detalle2";
+    return null;
+  };
 
+  const fotoKey = mapTipoAFotoKey(tipo);
+  if (!fotoKey) return;
 
+  const foto = fotos[fotoKey];
+  if (!foto) {
+    alert("Primero sube una foto para poder guardar la descripción");
+    return;
+  }
+
+  const descripcion = descripciones[tipo] ?? "";
+
+  try {
+    await establecerDescripcion(foto.idfoto, descripcion);
+    await cargarFotos();
+  } catch (error) {
+    console.error("Error actualizando descripción", error);
+    alert("No se pudo actualizar la descripción");
+  }
+};
 
 // ----------------------------
 // RENDER
@@ -178,6 +216,23 @@ return (
             style={styles.image}
             alt="Logo"
           />
+          <div style={styles.descriptionRow}>
+            <input
+              type="text"
+              value={descripciones.LOGO || ""}
+              onChange={e =>
+                setDescripciones(prev => ({ ...prev, LOGO: e.target.value }))
+              }
+              placeholder="Descripción logo"
+              style={styles.textInput}
+            />
+            <button
+              style={styles.smallButton}
+              onClick={() => guardarDescripcion("LOGO")}
+            >
+              Upload
+            </button>
+          </div>
           <input
             type="file"
             accept="image/*"
@@ -199,7 +254,26 @@ return (
                 style={styles.image}
                 alt={tipo}
               />
-              <div>{foto?.descripcion || "Sin descripción"}</div>
+              <div style={styles.descriptionRow}>
+                <input
+                  type="text"
+                  value={descripciones[tipo] || ""}
+                  onChange={e =>
+                    setDescripciones(prev => ({
+                      ...prev,
+                      [tipo]: e.target.value
+                    }))
+                  }
+                  placeholder="Descripción"
+                  style={styles.textInput}
+                />
+                <button
+                  style={styles.smallButton}
+                  onClick={() => guardarDescripcion(tipo)}
+                >
+                  Upload
+                </button>
+              </div>
 
               <input
                 type="file"
@@ -236,6 +310,22 @@ const styles = {
     height: "180px",
     objectFit: "cover",
     borderRadius: "8px"
+  },
+  descriptionRow: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "8px",
+    alignItems: "center"
+  },
+  textInput: {
+    flex: 1,
+    padding: "4px 6px",
+    fontSize: "12px"
+  },
+  smallButton: {
+    padding: "4px 8px",
+    fontSize: "11px",
+    cursor: "pointer"
   }
 };
 

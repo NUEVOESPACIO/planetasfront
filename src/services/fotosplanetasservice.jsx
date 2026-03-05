@@ -41,7 +41,7 @@ export const getFotosByPlanetaDetail2 = async (idPlaneta) => {
 // 🔹 Subir foto (logo o detail) usando apiClient
 export const handleAddFoto = async (file, idPlaneta, tipo) => {
   if (!file) return;
-  console.log("Archivo a subir:", file, file.size, file.type);  
+  console.log("Archivo a subir:", file, file.size, file.type);
 
   const formData = new FormData();
   formData.append("file", file);
@@ -71,4 +71,20 @@ export const deleteFotosById = async (idf) => {
     throw error;
   }
 };
+
+export const establecerDescripcion = async (idf, descripcion) => {
+  try {
+    await apiClient.patch(`/fotos/editdescripcion`,null,{
+      params: {
+        id: idf,
+        descripcion: descripcion
+      }}
+
+    );
+  } catch (error) {
+    console.error("Error borrando foto:", error);
+    throw error;
+  }
+};
+
 
